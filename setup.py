@@ -15,9 +15,27 @@ def get_git_commit_number():
 
 
 def make_cuda_ext(name, module, sources):
+    # CUDA 13.0 via conda places headers in targets/x86_64-linux/include/
+    # and the unified CCCL (cub/thrust/libcu++) in targets/x86_64-linux/include/cccl/
+    cuda_home = os.environ.get('CUDA_HOME', '')
+    target_include = os.path.join(cuda_home, 'targets', 'x86_64-linux', 'include') if cuda_home else ''
+    cccl_include = os.path.join(target_include, 'cccl') if target_include else ''
+
     cuda_ext = CUDAExtension(
         name='%s.%s' % (module, name),
-        sources=[os.path.join(*module.split('.'), src) for src in sources]
+        sources=[os.path.join(*module.split('.'), src) for src in sources],
+        include_dirs=[target_include, cccl_include] if target_include else [],
+        extra_compile_args={
+            'cxx': ['-DTHRUST_IGNORE_CUB_VERSION_CHECK'],
+            'nvcc': [
+                '-DTHRUST_IGNORE_CUB_VERSION_CHECK',
+                '-D__CUDA_NO_HALF_OPERATORS__',
+                '-D__CUDA_NO_HALF_CONVERSIONS__',
+                '-D__CUDA_NO_BFLOAT16_CONVERSIONS__',
+                '-D__CUDA_NO_HALF2_OPERATORS__',
+                '--expt-relaxed-constexpr',
+            ]
+        }
     )
     return cuda_ext
 

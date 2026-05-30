@@ -6,7 +6,7 @@ from torch import Tensor
 from math import pi as PI
 
 
-@torch.jit.script
+# @torch.jit.script  # Disabled: incompatible with kornia's dynamic list unpacking
 def quat_to_mat(quat_wxyz: Tensor) -> Tensor:
     """Convert scalar first quaternion to rotation matrix.
 
